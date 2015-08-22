@@ -8,20 +8,24 @@ import (
 	"net/url"
 )
 
+// Numbers represents the number management API functions
 type Numbers struct {
 	client *Client
 }
 
+// Type NumberSearchOptions defines options for filtering when searching for available numbers to purchase
 type NumberSearchOptions struct {
 	Pattern       string
 	SearchPattern string
 }
 
+// Type NumberSearchResponse represents a set of phone number available for purchase, and their count
 type NumberSearchResponse struct {
 	Count   int64
 	Numbers []AvailableNumber
 }
 
+// Type AvailableNumber represents a phone number available for purchase
 type AvailableNumber struct {
 	Country  string
 	MSISDN   string
@@ -34,10 +38,13 @@ type AvailableNumber struct {
 	GET /number/search?api_key={api_key}&api_secret={api_secret}&country={country}&pattern={pattern}&search_pattern={search_pattern}&features={features}&index={index}&size={size}
 	{"count":count,"numbers":[{"country":"country-code","msisdn":"phone number","type":"type of number","features":["feature"],"cost":"number cost"}]}
 */
+
+// Search for available phone numbers in a given country
 func (c *Numbers) SearchAvailable(countryCode string) (response NumberSearchResponse, err error) {
 	return c.SearchAvailableWithOptions(countryCode, NumberSearchOptions{})
 }
 
+// Search for available phone numbers in a given country, filtering by a pattern
 func (c *Numbers) SearchAvailableWithOptions(countryCode string, opts NumberSearchOptions) (response NumberSearchResponse, err error) {
 	if len(countryCode) <= 0 {
 		err = errors.New("Invalid country code field specified")
@@ -75,6 +82,8 @@ func (c *Numbers) SearchAvailableWithOptions(countryCode string, opts NumberSear
 	POST /number/buy/{api_key}/{api_secret}/{country}/{msisdn}
 	POST /number/buy?api_key={api_key}&api_secret={api_secret}&country={country}&msisdn={msisdn}
 */
+
+// Buy a phone number
 func (c *Numbers) BuyPhoneNumber(countryCode, number string) (bool, error) {
 	if len(countryCode) <= 0 {
 		return false, errors.New("Invalid country code field specified")
@@ -114,6 +123,8 @@ func (c *Numbers) BuyPhoneNumber(countryCode, number string) (bool, error) {
 	POST /number/cancel/{api_key}/{api_secret}/{country}/{msisdn}
 	POST /number/cancel?api_key={api_key}&api_secret={api_secret}&country={country}&msisdn={msisdn}
 */
+
+// Cancel a phone number
 func (c *Numbers) CancelPhoneNumber(countryCode, number string) (bool, error) {
 	if len(countryCode) <= 0 {
 		return false, errors.New("Invalid country code field specified")
