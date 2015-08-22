@@ -1,0 +1,72 @@
+package nexmo
+
+import (
+	"encoding/json"
+	"errors"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+)
+
+type Numbers struct {
+	client *Client
+}
+
+type NumberSearchOptions struct {
+	Pattern       string
+	SearchPattern string
+}
+
+type NumberSearchResponse struct {
+	Count   int64
+	Numbers []AvailableNumber
+}
+
+type AvailableNumber struct {
+	Country  string
+	MSISDN   string
+	Type     string
+	Features []string
+	Cost     float64 `json:",string"`
+}
+
+/*
+	GET /number/search?api_key={api_key}&api_secret={api_secret}&country={country}&pattern={pattern}&search_pattern={search_pattern}&features={features}&index={index}&size={size}
+	{"count":count,"numbers":[{"country":"country-code","msisdn":"phone number","type":"type of number","features":["feature"],"cost":"number cost"}]}
+*/
+func (c *Numbers) SearchAvailable(countryCode string) (response NumberSearchResponse, err error) {
+	return c.SearchAvailableWithOptions(countryCode, NumberSearchOptions{})
+}
+
+func (c *Numbers) SearchAvailableWithOptions(countryCode string, opts NumberSearchOptions) (response NumberSearchResponse, err error) {
+	if len(countryCode) <= 0 {
+		err = errors.New("Invalid country code field specified")
+		return
+	}
+
+	client := &http.Client{}
+
+	requestUrl := apiRoot + "/number/search/" + c.client.apiKey + "/" + c.client.apiSecret + "/" + countryCode
+	if opts.Pattern != "" && opts.SearchPattern != "" {
+		requestUrl += "?pattern=" + url.QueryEscape(opts.Pattern)
+		if opts.SearchPattern != "" {
+			requestUrl += "&search_pattern=" + url.QueryEscape(opts.SearchPattern)
+		}
+	}
+
+	r, _ := http.NewRequest("GET", requestUrl, nil)
+	r.Header.Add("Accept", "application/json")
+
+	resp, err := client.Do(r)
+	defer resp.Body.Close()
+
+	if err != nil {
+		return
+	}
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	err = json.Unmarshal(body, &response)
+	return
+
+}

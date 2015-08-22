@@ -9,6 +9,7 @@ import (
 type Client struct {
 	Account   *Account
 	SMS       *SMS
+	Numbers   *Numbers
 	USSD      *USSD
 	apiKey    string
 	apiSecret string
@@ -32,6 +33,7 @@ func NewClientFromAPI(apiKey, apiSecret string) (*Client, error) {
 
 	c.Account = &Account{c}
 	c.SMS = &SMS{c}
+	c.Numbers = &Numbers{c}
 	c.USSD = &USSD{c}
 	return c, nil
 }
