@@ -61,7 +61,7 @@ func TestSearchForAvailableNumber(t *testing.T) {
 	}
 }
 
-func TestBuyAndCancelAvailableNumber(t *testing.T) {
+func TestBuyUpdateAndCancelAvailableNumber(t *testing.T) {
 	time.Sleep(1 * time.Second) // Sleep 1 second due to API limitation
 
 	nexmo, err := NewClientFromAPI(API_KEY, API_SECRET)
@@ -99,6 +99,20 @@ func TestBuyAndCancelAvailableNumber(t *testing.T) {
 	}
 	if !buySuccess {
 		t.Error("Purchase was not success")
+	}
+
+	testUpdateUrl := ""
+	if testUpdateUrl != "" {
+		updateOpts := UpdateNumberOpts{
+			MoHttpUrl: testUpdateUrl,
+		}
+		updateSuccess, err := nexmo.Numbers.UpdateNumber("US", numToBuy, updateOpts)
+		if err != nil {
+			t.Error("Error when updating phone number:", err)
+		}
+		if !updateSuccess {
+			t.Error("Update was not success")
+		}
 	}
 
 	cancelSuccess, err := nexmo.Numbers.CancelPhoneNumber("US", numToBuy)

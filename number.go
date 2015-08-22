@@ -159,3 +159,53 @@ func (c *Numbers) CancelPhoneNumber(countryCode, number string) (bool, error) {
 		return false, errors.New("Other error")
 	}
 }
+
+/*
+	POST /number/update/{api_key}/{api_secret}/{country}/{msisdn}?moHttpUrl={url}&moSmppSysType={sysType}&voiceCallbackType={type}&voiceCallbackValue={value}&voiceStatusCallback={status}
+	POST /number/update?api_key={api_key}&api_secret={api_secret}&country={country}&msisdn={msisdn}&moHttpUrl={url}&moSmppSysType={sysType}&voiceCallbackType={type}&voiceCallbackValue={value}&voiceStatusCallback={status}
+*/
+
+type UpdateNumberOpts struct {
+	MoHttpUrl string
+}
+
+// Update a phone number with webhook URLs
+func (c *Numbers) UpdateNumber(countryCode, number string, opts UpdateNumberOpts) (bool, error) {
+	if len(countryCode) <= 0 {
+		return false, errors.New("Invalid country code field specified")
+	}
+
+	if len(number) <= 0 {
+		return false, errors.New("Invalid number field specified")
+	}
+
+	client := &http.Client{}
+
+	requestUrl := apiRoot + "/number/update/" + c.client.apiKey + "/" +
+		c.client.apiSecret + "/" + countryCode + "/" + number + "?"
+
+	if opts.MoHttpUrl != "" {
+		requestUrl += "&moHttpUrl=" + url.QueryEscape(opts.MoHttpUrl)
+	}
+
+	r, _ := http.NewRequest("POST", requestUrl, nil)
+	r.Header.Add("Accept", "application/json")
+
+	resp, err := client.Do(r)
+	defer resp.Body.Close()
+
+	if err != nil {
+		return false, err
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		return true, nil
+	case 401:
+		return false, errors.New("Wrong credentials")
+	case 420:
+		return false, errors.New("Bad parameters")
+	default:
+		return false, errors.New("Other error")
+	}
+}
