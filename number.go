@@ -70,3 +70,81 @@ func (c *Numbers) SearchAvailableWithOptions(countryCode string, opts NumberSear
 	return
 
 }
+
+/*
+	POST /number/buy/{api_key}/{api_secret}/{country}/{msisdn}
+	POST /number/buy?api_key={api_key}&api_secret={api_secret}&country={country}&msisdn={msisdn}
+*/
+func (c *Numbers) BuyPhoneNumber(countryCode, number string) (bool, error) {
+	if len(countryCode) <= 0 {
+		return false, errors.New("Invalid country code field specified")
+	}
+
+	if len(number) <= 0 {
+		return false, errors.New("Invalid number field specified")
+	}
+
+	client := &http.Client{}
+
+	requestUrl := apiRoot + "/number/buy/" + c.client.apiKey + "/" +
+		c.client.apiSecret + "/" + countryCode + "/" + number
+	r, _ := http.NewRequest("POST", requestUrl, nil)
+	r.Header.Add("Accept", "application/json")
+
+	resp, err := client.Do(r)
+	defer resp.Body.Close()
+
+	if err != nil {
+		return false, err
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		return true, nil
+	case 401:
+		return false, errors.New("Wrong credentials")
+	case 420:
+		return false, errors.New("Bad parameters")
+	default:
+		return false, errors.New("Other error")
+	}
+}
+
+/*
+	POST /number/cancel/{api_key}/{api_secret}/{country}/{msisdn}
+	POST /number/cancel?api_key={api_key}&api_secret={api_secret}&country={country}&msisdn={msisdn}
+*/
+func (c *Numbers) CancelPhoneNumber(countryCode, number string) (bool, error) {
+	if len(countryCode) <= 0 {
+		return false, errors.New("Invalid country code field specified")
+	}
+
+	if len(number) <= 0 {
+		return false, errors.New("Invalid number field specified")
+	}
+
+	client := &http.Client{}
+
+	requestUrl := apiRoot + "/number/cancel/" + c.client.apiKey + "/" +
+		c.client.apiSecret + "/" + countryCode + "/" + number
+	r, _ := http.NewRequest("POST", requestUrl, nil)
+	r.Header.Add("Accept", "application/json")
+
+	resp, err := client.Do(r)
+	defer resp.Body.Close()
+
+	if err != nil {
+		return false, err
+	}
+
+	switch resp.StatusCode {
+	case 200:
+		return true, nil
+	case 401:
+		return false, errors.New("Wrong credentials")
+	case 420:
+		return false, errors.New("Bad parameters")
+	default:
+		return false, errors.New("Other error")
+	}
+}

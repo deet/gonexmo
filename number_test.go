@@ -1,6 +1,7 @@
 package nexmo
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -60,6 +61,51 @@ func TestSearchForAvailableNumber(t *testing.T) {
 	}
 }
 
-func TestBuyAvailableNumber(t *testing.T) {
+func TestBuyAndCancelAvailableNumber(t *testing.T) {
+	time.Sleep(1 * time.Second) // Sleep 1 second due to API limitation
 
+	nexmo, err := NewClientFromAPI(API_KEY, API_SECRET)
+	if err != nil {
+		t.Error("Failed to create Client with error:", err)
+	}
+
+	_, err = nexmo.Numbers.BuyPhoneNumber("", "")
+	if err == nil {
+		t.Error("Expected error with blank parameters")
+	}
+
+	_, err = nexmo.Numbers.BuyPhoneNumber("US", "jsdfdsf")
+	if err == nil {
+		t.Error("Expected error with bad parameters")
+	}
+
+	_, err = nexmo.Numbers.BuyPhoneNumber("US", "12305933")
+	if err == nil {
+		t.Error("Expected error with bad parameters")
+	}
+
+	availableNums, err := nexmo.Numbers.SearchAvailable("US")
+	if err != nil || len(availableNums.Numbers) == 0 {
+		t.Error("Could not find available phone numbers. Error:", err)
+		return
+	}
+
+	numToBuy := availableNums.Numbers[0].MSISDN
+	fmt.Println("Buying (and then cancelling) phone number:", numToBuy)
+
+	buySuccess, err := nexmo.Numbers.BuyPhoneNumber("US", numToBuy)
+	if err != nil {
+		t.Error("Error when buying phone number:", err)
+	}
+	if !buySuccess {
+		t.Error("Purchase was not success")
+	}
+
+	cancelSuccess, err := nexmo.Numbers.CancelPhoneNumber("US", numToBuy)
+	if err != nil {
+		t.Error("Error when cancelling phone number:", err)
+	}
+	if !cancelSuccess {
+		t.Error("Cancel was not success")
+	}
 }
