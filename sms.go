@@ -1,11 +1,14 @@
 package nexmo
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 )
 
 // SMS represents the SMS API functions for sending text messages.
@@ -82,7 +85,7 @@ type SMSMessage struct {
 	StatusReportRequired int          `json:"status-report-req,omitempty"` // Optional.
 	ClientReference      string       `json:"client-ref,omitempty"`        // Optional.
 	NetworkCode          string       `json:"network-code,omitempty"`      // Optional.
-	VCard                string       `json:"vcrad,omitempty"`             // Optional.
+	VCard                string       `json:"vcard,omitempty"`             // Optional.
 	VCal                 string       `json:"vcal,omitempty"`              // Optional.
 	TTL                  int          `json:"ttl,omitempty"`               // Optional.
 	Class                MessageClass `json:"message-class,omitempty"`     // Optional.
@@ -94,6 +97,42 @@ type SMSMessage struct {
 	Title    string `json:"title,omitempty"`    // Title shown to recipient
 	URL      string `json:"url,omitempty"`      // WAP Push URL
 	Validity int    `json:"validity,omitempty"` // Duration WAP Push is available in milliseconds
+}
+
+func (msg *SMSMessage) ToValues() url.Values {
+	vals := url.Values{}
+	vals.Add("from", msg.From)
+	vals.Add("to", msg.To)
+	vals.Add("type", msg.Type)
+	if msg.Text != "" {
+		vals.Add("text", msg.Text)
+	}
+	if msg.StatusReportRequired != 0 {
+		vals.Add("status-report-req", strconv.Itoa(msg.StatusReportRequired))
+	}
+	if msg.ClientReference != "" {
+		vals.Add("client-ref", msg.ClientReference)
+	}
+	if msg.NetworkCode != "" {
+		vals.Add("network-code", msg.NetworkCode)
+	}
+	if msg.VCard != "" {
+		vals.Add("vcard", msg.VCard)
+	}
+	if msg.VCal != "" {
+		vals.Add("vcal", msg.VCal)
+	}
+	if msg.TTL != 0 {
+		vals.Add("ttl", strconv.Itoa(msg.TTL))
+	}
+	// TODO support message-class
+	if len(msg.Body) > 0 {
+		vals.Add("body", string(msg.Body))
+	}
+	if len(msg.UDH) > 0 {
+		vals.Add("udh", string(msg.UDH))
+	}
+	return vals
 }
 
 type ResponseCode int
@@ -204,15 +243,22 @@ func (c *SMS) Send(msg *SMSMessage) (*MessageResponse, error) {
 	client := &http.Client{}
 
 	var r *http.Request
-	buf, err := json.Marshal(msg)
-	if err != nil {
-		return nil, errors.New("Invalid message struct. Cannot convert to json.")
+
+	messageValues := msg.ToValues()
+	messageValues.Add("api_key", msg.apiKey)
+	messageValues.Add("api_secret", msg.apiSecret)
+	encodedForm := messageValues.Encode()
+	if c.client.VerboseLogging {
+		log.Println("NEXMO: Sending encoded form:", encodedForm)
 	}
-	b := bytes.NewBuffer(buf)
-	r, _ = http.NewRequest("POST", apiRoot+"/sms/json", b)
+	r, _ = http.NewRequest("POST", apiRoot+"/sms/json", strings.NewReader(encodedForm))
 
 	r.Header.Add("Accept", "application/json")
-	r.Header.Add("Content-Type", "application/json")
+	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	if c.client.VerboseLogging {
+		log.Printf("NEXMO: Sending request: %+v\n", r)
+	}
 
 	resp, err := client.Do(r)
 
@@ -221,7 +267,15 @@ func (c *SMS) Send(msg *SMSMessage) (*MessageResponse, error) {
 	}
 	defer resp.Body.Close()
 
+	if c.client.VerboseLogging {
+		log.Println("NEXMO: Response status code:", resp.StatusCode)
+	}
+
 	body, _ := ioutil.ReadAll(resp.Body)
+
+	if c.client.VerboseLogging {
+		log.Println("NEXMO: Response:", string(body))
+	}
 
 	err = json.Unmarshal(body, &messageResponse)
 	if err != nil {

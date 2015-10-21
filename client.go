@@ -7,13 +7,14 @@ import (
 // Client encapsulates the Nexmo functions - must be created with
 // NewClientFromAPI()
 type Client struct {
-	Account   *Account
-	SMS       *SMS
-	Numbers   *Numbers
-	USSD      *USSD
-	apiKey    string
-	apiSecret string
-	useOauth  bool
+	Account        *Account
+	SMS            *SMS
+	Numbers        *Numbers
+	USSD           *USSD
+	apiKey         string
+	apiSecret      string
+	useOauth       bool
+	VerboseLogging bool
 }
 
 // NewClientFromAPI creates a new Client type with the
